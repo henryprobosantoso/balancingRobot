@@ -2,10 +2,9 @@ from mpu6050 import mpu6050
 from time import sleep
 import math
 from pidcontroller import PIDController
-import  RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 from AngleMeterAlpha import AngleMeterAlpha
-
-
+from guizero import App, Text, Slider
 
 GPIO.setmode(GPIO.BCM) #Setting the Mode to use. I am using the BCM setup
 GPIO.setwarnings(False)
@@ -55,8 +54,37 @@ PWM2 = GPIO.PWM(stepLeft, 50)
 PWM1.start(0)
 PWM2.start(0)
 
+#Calling the MPU6050 data
+angleMeter = AngleMeterAlpha()
+angleMeter.measure()
 
-#This backward function takes a velocity argument that is the PID value. Both motors drives backward
+
+def changeCalibrationValue(CalibrationSliderValue):
+    global calibrationValue
+    calibrationValue = calibrationValueAwal + float(CalibrationSliderValue) * 0.1
+    print(calibrationValue)
+def changeSetPointValue(setPointSliderValue):
+    global setPoint
+    setPoint = setPointAwal + float(setPointSliderValue) * 0.1
+    print(setPoint)
+def changePValue(PSliderValue):
+    global P
+    P = PAwal + float(PSliderValue)
+    print(P)
+def changeIValue(ISliderValue):
+    global I
+    I = IAwal + float(ISliderValue)
+    print(I)
+def changeDValue(DSliderValue):
+    global D
+    D = DAwal + float(DSliderValue)
+    print(D)
+
+def counter():
+    print("calibrationValue = ", calibrationValue)
+    print("P = ", P)
+    print("I = ", I)
+    print("D = ", D)
 def backward(velocity):
     GPIO.output(sleepPinRight, GPIO.HIGH)
     GPIO.output(sleepPinLeft, GPIO.HIGH)
@@ -92,45 +120,46 @@ def berhenti():
     GPIO.output(sleepPinRight, GPIO.LOW)
     GPIO.output(sleepPinLeft, GPIO.LOW)
 
-
-
-sensor = mpu6050(0x68)
-#K and K1 --> Constants used with the complementary filter
-K = 0.98
-K1 = 1 - K
-
-time_diff = 0.02
-ITerm = 0
-
-#Calling the MPU6050 data
-angleMeter = AngleMeterAlpha()
-angleMeter.measure()
+PAwal = 1700
+IAwal = 0
+DAwal = 0
+calibrationValueAwal = 0.5
+setPointAwal = 0.1
 
 setPoint = 0
-calibrationValue = 1
-#the so called 'main loop' that loops around and tells the motors wether to move or not
-try:
-    while True:
-        inputSudut = round(angleMeter.get_kalman_roll(), 1) + calibrationValue
-        #setting the PID values. Here you can change the P, I and D values according to yiur needs
+calibrationValue = 0
+P = 0
+I = 0
+D = 0
 
-    #     PID = PIDController(P=380, I=50, D=50) #HALF
-        PID = PIDController(P=1700, I=0, D=1) #eight
-    #     PID = PIDController(P=3000, I=0, D=0) #sixteen
-        PIDx = PID.step(inputSudut)
-        #if the PIDx data is lower than 0.0 than move appropriately backward
-        if PIDx < setPoint:
-            forward(-(PIDx))
-            #StepperFor(-PIDx)
-        #if the PIDx data is higher than 0.0 than move appropriately forward
-        elif PIDx > setPoint:
-            backward((PIDx))
-            #StepperBACK(PIDx)
-        #if none of the above statements is fulfilled than do not move at all
-        else:
-            equilibrium()
-#         print(inputSudut, 'PID: ', int(PIDx))
-        sleep(0.01)
+def mainLoop():
+    inputSudut = round(angleMeter.get_kalman_roll(), 1) + round(calibrationValue, 1)
+    PID = PIDController(P, I, D) #eight
+    PIDx = round(PID.step(inputSudut), 1)
+    if inputSudut < -setPoint:
+        forward(-(PIDx))
+#         print("forward")
+    elif inputSudut > setPoint:
+        backward((PIDx))
+#         print("back")
+    else:
+        equilibrium()
+#         print("equi")
+    print(round(inputSudut, 2), 'PID: ', PIDx)
+#     counter()
+changeCalibrationValue(0)
+changePValue(0)
+changeIValue(0)
+changeDValue(0)
 
-except KeyboardInterrupt:
-    berhenti()
+app = App(title = "PID Control Setting")
+text = Text(app, text = 1)
+text.repeat(1, mainLoop)
+welcomeMessage = Text(app, text = "PID Control Setting")
+
+calibrationSlider = Slider(app, command = changeCalibrationValue, start=-30, end=30)
+setPointSlider = Slider(app, command = changeSetPointValue, start=-30, end=30)
+PSlider = Slider(app, command = changePValue, start=-1000, end=1000)
+ISlider = Slider(app, command = changeIValue, start=-3000, end=3000)
+DSlider = Slider(app, command = changeDValue, start=-3000, end=3000)
+app.display()

@@ -70,15 +70,15 @@ def changeSetPointValue(setPointSliderValue):
 def changePValue(PSliderValue):
     global P
     P = PAwal + float(PSliderValue)
-    print(P)
+#     print(P)
 def changeIValue(ISliderValue):
     global I
     I = IAwal + float(ISliderValue)
-    print(I)
+#     print(I)
 def changeDValue(DSliderValue):
     global D
     D = DAwal + float(DSliderValue)
-    print(D)
+#     print(D)
 
 def counter():
     print("calibrationValue = ", calibrationValue)
@@ -120,20 +120,19 @@ def berhenti():
     GPIO.output(sleepPinRight, GPIO.LOW)
     GPIO.output(sleepPinLeft, GPIO.LOW)
 
-PAwal = 1700
+PAwal = 1000
 IAwal = 0
 DAwal = 0
-calibrationValueAwal = 0.5
-setPointAwal = 0.1
+calibrationValueAwal = 0.7
+setPointAwal = 0
 
 setPoint = 0
 calibrationValue = 0
 P = 0
 I = 0
 D = 0
-
 def mainLoop():
-    inputSudut = round(angleMeter.get_kalman_roll(), 1) + round(calibrationValue, 1)
+    inputSudut = round(angleMeter.get_kalman_roll(), 0) + round(calibrationValue, 0)
     PID = PIDController(P, I, D) #eight
     PIDx = round(PID.step(inputSudut), 1)
     if inputSudut < -setPoint:
@@ -160,6 +159,6 @@ welcomeMessage = Text(app, text = "PID Control Setting")
 calibrationSlider = Slider(app, command = changeCalibrationValue, start=-30, end=30)
 setPointSlider = Slider(app, command = changeSetPointValue, start=-30, end=30)
 PSlider = Slider(app, command = changePValue, start=-1000, end=1000)
-ISlider = Slider(app, command = changeIValue, start=-3000, end=3000)
+ISlider = Slider(app, command = changeIValue, start=-10000, end=10000)
 DSlider = Slider(app, command = changeDValue, start=-3000, end=3000)
 app.display()

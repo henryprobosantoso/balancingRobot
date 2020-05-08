@@ -21,11 +21,9 @@ class PIDController:
         error = currentValue - self.target
 
         output = (self.KP * error + self.KI * self.integrator + self.KD * (error - self.lastError))
-
+        coba = error
         self.lastError = error
         self.integrator += error
-
+        print('error========= ', coba)
         return output
-
-
 

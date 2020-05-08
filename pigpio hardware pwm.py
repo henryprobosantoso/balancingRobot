@@ -1,21 +1,12 @@
-'''HARIOMHARIBOLJAIMATAJIPITAJIKIJAIJAI'''
-
-#a python script to be used with Balancing robots
-
-# Importing all necessary librarys and classes
 from mpu6050 import mpu6050
 from time import sleep
 import math
 from pidcontroller import PIDController
-import  RPi.GPIO as GPIO
 import time
 from simple_pid import PID
-from AngleMeterAlpha import AngleMeterAlpha
+import pigpio
 
-angleMeter = AngleMeterAlpha()
-angleMeter.measure()
-GPIO.setmode(GPIO.BCM) #Setting the Mode to use. I am using the BCM setup
-GPIO.setwarnings(False)
+pi = pigpio.pi()
 
 #Declaring the GPIO Pins that the motor controller is set with
 m0Right = 8
@@ -32,68 +23,63 @@ sleepPinLeft = 23
 stepLeft = 13
 directionLeft = 25
 
-GPIO.setup(sleepPinRight, GPIO.OUT)
-GPIO.setup(stepRight, GPIO.OUT)
-GPIO.setup(directionRight, GPIO.OUT)
-GPIO.setup(m0Right, GPIO.OUT)
-GPIO.setup(m1Right, GPIO.OUT)
-GPIO.setup(m2Right, GPIO.OUT)
+pi.set_mode(sleepPinRight, pigpio.OUTPUT)
+pi.set_mode(stepRight, pigpio.OUTPUT)
+pi.set_mode(directionRight, pigpio.OUTPUT)
+pi.set_mode(m0Right, pigpio.OUTPUT)
+pi.set_mode(m1Right, pigpio.OUTPUT)
+pi.set_mode(m2Right, pigpio.OUTPUT)
 
-GPIO.setup(sleepPinLeft, GPIO.OUT)
-GPIO.setup(stepLeft, GPIO.OUT)
-GPIO.setup(directionLeft, GPIO.OUT)
-GPIO.setup(m0Left, GPIO.OUT)
-GPIO.setup(m1Left, GPIO.OUT)
-GPIO.setup(m2Left, GPIO.OUT)
+pi.set_mode(sleepPinLeft, pigpio.OUTPUT)
+pi.set_mode(stepLeft, pigpio.OUTPUT)
+pi.set_mode(directionLeft, pigpio.OUTPUT)
+pi.set_mode(m0Left, pigpio.OUTPUT)
+pi.set_mode(m1Left, pigpio.OUTPUT)
+pi.set_mode(m2Left, pigpio.OUTPUT)
 
-GPIO.output(sleepPinRight, GPIO.HIGH)
-GPIO.output(m0Right, GPIO.LOW)
-GPIO.output(m1Right, GPIO.HIGH)
-GPIO.output(m2Right, GPIO.LOW)
-GPIO.output(sleepPinLeft, GPIO.HIGH)
-GPIO.output(m0Left, GPIO.LOW)
-GPIO.output(m1Left, GPIO.HIGH)
-GPIO.output(m2Left, GPIO.LOW)
+pi.write(sleepPinRight, 1)
+pi.write(m0Right, 0)
+pi.write(m1Right, 1)
+pi.write(m2Right, 0)
+
+pi.write(sleepPinLeft, 1)
+pi.write(m0Left, 0)
+pi.write(m1Left, 1)
+pi.write(m2Left, 0)
 # LOW
-PWM1 = GPIO.PWM(stepRight, 50)
-PWM2 = GPIO.PWM(stepLeft, 50)
-PWM1.start(0)
-PWM2.start(0)
+pi.set_PWM_dutycycle(stepRight, 128)
+pi.set_PWM_dutycycle(stepLeft, 128)
 
 def backward(velocity):
-    GPIO.output(sleepPinRight, GPIO.HIGH)
-    GPIO.output(sleepPinLeft, GPIO.HIGH)
-    GPIO.output(directionRight, GPIO.LOW)
-    GPIO.output(directionLeft, GPIO.LOW)
-    PWM1.ChangeDutyCycle(50)
-    PWM2.ChangeDutyCycle(50)
-    PWM1.ChangeFrequency(velocity)
-    PWM2.ChangeFrequency(velocity)
+    pi.write(sleepPinRight, 1)
+    pi.write(sleepPinLeft, 1)
+    pi.write(directionRight, 0)
+    pi.write(directionLeft, 0)
+    pi.hardware_PWM(stepRight, velocity, 500000)
+    pi.hardware_PWM(stepLeft, velocity, 500000)
 
 #Alike the backward funtion this forward function does the same thing but moves both the motors forward.
 def forward(velocity):
-    GPIO.output(sleepPinRight, GPIO.HIGH)
-    GPIO.output(sleepPinLeft, GPIO.HIGH)
-    GPIO.output(directionRight, GPIO.HIGH)
-    GPIO.output(directionLeft, GPIO.HIGH)
-    PWM1.ChangeDutyCycle(50)
-    PWM2.ChangeDutyCycle(50)
-    PWM1.ChangeFrequency(velocity)
-    PWM2.ChangeFrequency(velocity)
+    pi.write(sleepPinRight, 1)
+    pi.write(sleepPinLeft, 1)
+    pi.write(directionRight, 1)
+    pi.write(directionLeft, 1)
+    pi.hardware_PWM(stepRight, velocity, 500000)
+    pi.hardware_PWM(stepLeft, velocity, 500000)
 
 #If the PID value is 0 (the Robot is 'balanced') it uses this equilibrium function.
 def equilibrium():
-    PWM1.ChangeDutyCycle(0)
-    PWM2.ChangeDutyCycle(0)
-    GPIO.output(sleepPinRight, GPIO.HIGH)
-    GPIO.output(sleepPinLeft, GPIO.HIGH)
+    pi.set_PWM_dutycycle(stepRight, 0)
+    pi.set_PWM_dutycycle(stepLeft, 0)
+    pi.write(sleepPinRight, 1)
+    pi.write(sleepPinLeft, 1)
 
 #If the PID value is 0 (the Robot is 'balanced') it uses this equilibrium function.
 def berhenti():
-    PWM1.ChangeDutyCycle(0)
-    PWM2.ChangeDutyCycle(0)
-    GPIO.output(sleepPinRight, GPIO.LOW)
-    GPIO.output(sleepPinLeft, GPIO.LOW)
+    pi.set_PWM_dutycycle(stepRight, 0)
+    pi.set_PWM_dutycycle(stepLeft, 0)
+    pi.write(sleepPinRight, 0)
+    pi.write(sleepPinLeft, 0)
 
 
 sensor = mpu6050(0x68)
@@ -175,7 +161,7 @@ gyro_total_y = (last_y) - gyro_offset_y
 
 # PID DEFINITION
 setPoint = 0
-calibrationValue = 2
+calibrationValue = 0
 P = 400
 I = 0
 D = 0
@@ -208,20 +194,20 @@ try:
         last_x = K * (last_x + gyro_x_delta) + (K1 * rotation_x)
         inputSudut = round(last_x, decimalDigitSudut) + round(calibrationValue, decimalDigitSudut)
         inputSudut = round(inputSudut, decimalDigit)
-#         pid.tunings = (P, I, D)
-#         PIDx = pid(inputSudut)
-        output = computePID(inputSudut)
-        PIDx = output
+        pid.tunings = (P, I, D)
+        PIDx = pid(inputSudut)
+#         output = computePID(inputSudut)
+#         PIDx = output
         if inputSudut == batas:
             equilibrium()
 #             print("berhenti")
         elif PIDx < 0.0:
-            backward(-float(PIDx))
+            backward(-int(PIDx))
 #             print("back")
             #StepperFor(-PIDx)
         #if the PIDx data is higher than 0.0 than move appropriately forward
         elif PIDx > 0.0:
-            forward(float(PIDx))
+            forward(int(PIDx))
 #             print("forw")
             #StepperBACK(PIDx)
 

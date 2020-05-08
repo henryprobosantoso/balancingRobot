@@ -73,7 +73,7 @@ class AngleMeterAlpha:
 				GYRO_YOUT_H = 0x45
 				GYRO_ZOUT_H = 0x47
 
-# 				time.sleep(1)
+				time.sleep(1)
 				# Read Accelerometer raw value
 				accX = self.read_raw_data(ACCEL_XOUT_H)
 				accY = self.read_raw_data(ACCEL_YOUT_H)
@@ -87,7 +87,7 @@ class AngleMeterAlpha:
 				else:
 					roll = math.atan(accY / math.sqrt((accX ** 2) + (accZ ** 2))) * radToDeg
 					pitch = math.atan2(-accX, accZ) * radToDeg
-# 				print(roll)
+				#print(roll)
 				kalmanX.setAngle(roll)
 				kalmanY.setAngle(pitch)
 				gyroXAngle = roll;
@@ -176,8 +176,8 @@ class AngleMeterAlpha:
 							self.kalman_roll = kalAngleX
 							self.compl_pitch = compAngleY
 							self.compl_roll = compAngleX
-# 							print(str(roll)+"  "+str(gyroXAngle)+"  "+str(compAngleX)+"  "+str(kalAngleX)+"  "+str(pitch)+"  "+str(gyroYAngle)+"  "+str(compAngleY)+"  "+str(kalAngleY))
-# 							time.sleep(0.005)
+							#print(str(roll)+"  "+str(gyroXAngle)+"  "+str(compAngleX)+"  "+str(kalAngleX)+"  "+str(pitch)+"  "+str(gyroYAngle)+"  "+str(compAngleY)+"  "+str(kalAngleY))
+							time.sleep(0.005)
 
 						except Exception as exc:
                                                     if(flag == 100):
@@ -213,7 +213,7 @@ class AngleMeterAlpha:
 			return int(self.roll)
 
 		def get_complementary_roll(self):
-			return int(self.compl_roll)
+			return self.compl_roll
 
 		def get_complementary_pitch(self):
 			return int(self.compl_pitch)
@@ -223,10 +223,3 @@ class AngleMeterAlpha:
 
 		def get_kalman_pitch(self):
 			return int(self.kalman_pitch)
-
-# 		def getAngleX(self):
-# 			return int(self.kalman_roll)
-
-# angleMeter = AngleMeterAlpha()
-# angleMeter.measure()
-# print(angleMeter.get_kalman_pitch())
